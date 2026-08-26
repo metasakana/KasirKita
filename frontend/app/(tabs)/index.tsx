@@ -6,8 +6,7 @@ import React, { useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { ChipRow, EmptyState, PrimaryButton } from "@/src/components/common";
-import { Header } from "@/src/components/common";
+import { ChipRow, EmptyState, PrimaryButton , Header } from "@/src/components/common";
 import { LOW_STOCK_THRESHOLD, Product, useStore } from "@/src/store/StoreContext";
 import { useToast } from "@/src/components/Toast";
 import { useTheme } from "@/src/theme/ThemeContext";

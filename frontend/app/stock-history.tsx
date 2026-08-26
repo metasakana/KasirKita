@@ -8,7 +8,7 @@ import { EmptyState } from "@/src/components/common";
 import { StockEntry, useStore } from "@/src/store/StoreContext";
 import { useTheme } from "@/src/theme/ThemeContext";
 import { Font, radius, spacing } from "@/src/theme/themes";
-import { formatDateTime, formatNumber } from "@/src/utils/format";
+import { formatDateTime, formatNumber, formatRupiah } from "@/src/utils/format";
 
 export default function StockHistory() {
   const router = useRouter();
@@ -68,6 +68,7 @@ function EntryRow({ entry, colors }: { entry: StockEntry; colors: any }) {
         </Text>
         <Text style={{ fontFamily: Font.regular, fontSize: 12, color: colors.onSurfaceTertiary }}>
           {formatDateTime(entry.createdAt)}
+          {entry.costPrice ? ` · Modal ${formatRupiah(entry.costPrice)}` : ""}
         </Text>
         {entry.note ? (
           <Text

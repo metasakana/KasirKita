@@ -1,0 +1,24 @@
+{
+  "summary": "Iteration 5 (frontend-only) tested Kasir Kita Stok pricing features: markup % in product form and restock-with-new-harga-beli variant splitting. All acceptance criteria PASSED end-to-end via Playwright on mobile viewport (390x844). Fresh session -> PIN 123456 created -> 8 products seeded. Feature 1 (markup %): toggle 'Naik %' reveals form-pct-input; typing 10 with modal 10.000 gives computed 'Harga jual: Rp 10.000 + 10% = Rp 11.000'; chip form-pct-20 gives Rp 12.000; product saved and appears in Stok with Jual 12.000; empty % in persen mode shows toast 'Harga jual belum diisi'; Rp direct mode still saves correctly. Feature 2 (restock): CASE A empty cost -> qty 12 becomes 17 on same row; CASE B new cost 18.000 -> creates SECOND row 'Minyak Goreng Bimoli 1L' qty 7 modal 18.000 with sellPrice copied (19.000), correct info & preview shown, toast 'Dibuat stok baru...'; CASE C same variant cost 18.000 qty 3 -> variant row becomes qty 10 (7+3) with NO third row, toast 'Stok digabung...'. Feature 2b: stock-history shows 'Modal Rp X' next to date for all 3 entries. Regression: edit product qty persists; Kasir shows product cards, adds to cart, Bayar CTA visible.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/tmp/f1_saved.png", "/tmp/f1_final.png", "/tmp/history.png", "/tmp/kasir.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "StoreContext.tsx now 612 lines - approaching the 700-line split threshold; consider extracting restock/checkout/debts/categories into hooks or slice files soon.",
+    "restock() new variant creation uses sellPrice from original product; explicit test confirms this behavior (variant Jual 19.000, Untung 1.000). Confirm this is desired product spec (user may want to edit sellPrice for the new variant later via edit-product screen, which works fine).",
+    "Console warnings present (non-blocking): shadow* deprecated -> boxShadow, pointerEvents on props deprecated -> style.pointerEvents, useNativeDriver missing on web. Cosmetic only on web preview."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (offline app)", "frontend": "100%"},
+  "seed_data_creation": "Fresh session created PIN 123456 and used the app's built-in seed (8 products). Test-added products: 'Gula Pasir Test' (persen mode), 'Test Rp Mode' (Rp mode).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "App: offline POS (AsyncStorage, no backend). URL from EXPO_PACKAGER_PROXY_URL. Fresh session lands on /login 'Buat PIN Baru' — enter PIN twice. Feature 1 & 2 testIDs used: form-sellmode-persen, form-sellmode-rp, form-pct-input, form-pct-{5|10|15|20|25|30}, form-sell-computed, restock-cost-input, restock-cost-info. restock() returns 'ok'|'new'|'merged'|false. Variant matching keys off name+category+costPrice.",
+  "rca_of_issue": "N/A — all features work as specified."
+}

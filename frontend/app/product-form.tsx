@@ -28,10 +28,13 @@ export default function ProductForm() {
   const [qty, setQty] = useState(existing ? String(existing.qty) : "");
   const [cost, setCost] = useState(existing ? String(existing.costPrice) : "");
   const [sell, setSell] = useState(existing ? String(existing.sellPrice) : "");
+  const [sellMode, setSellMode] = useState<"rp" | "persen">("rp");
+  const [pctStr, setPctStr] = useState("");
   const [confirmDel, setConfirmDel] = useState(false);
 
   const costNum = parseRupiah(cost);
-  const sellNum = parseRupiah(sell);
+  const pct = parseRupiah(pctStr);
+  const sellNum = sellMode === "rp" ? parseRupiah(sell) : pct > 0 ? Math.round(costNum * (1 + pct / 100)) : 0;
   const profit = sellNum - costNum;
 
   const catOptions = useMemo(
@@ -42,6 +45,10 @@ export default function ProductForm() {
   const save = () => {
     if (!name.trim()) {
       toast.show("Nama barang wajib diisi", "error");
+      return;
+    }
+    if (sellNum <= 0) {
+      toast.show("Harga jual belum diisi", "error");
       return;
     }
     const payload = {
@@ -141,19 +148,47 @@ export default function ProductForm() {
           />
         </Field>
 
-        <View style={{ flexDirection: "row", gap: spacing.md }}>
-          <Field label="Harga Modal (Rp)" colors={colors} style={{ flex: 1 }}>
-            <TextInput
-              testID="form-cost-input"
-              value={cost}
-              onChangeText={(t) => setCost(t.replace(/[^0-9]/g, ""))}
-              keyboardType="number-pad"
-              placeholder="0"
-              placeholderTextColor={colors.onSurfaceTertiary}
-              style={[styles.input, { backgroundColor: colors.surfaceSecondary, color: colors.onSurface, borderColor: colors.border }]}
-            />
-          </Field>
-          <Field label="Harga Jual (Rp)" colors={colors} style={{ flex: 1 }}>
+        <Field label="Harga Modal / Beli (Rp)" colors={colors}>
+          <TextInput
+            testID="form-cost-input"
+            value={cost}
+            onChangeText={(t) => setCost(t.replace(/[^0-9]/g, ""))}
+            keyboardType="number-pad"
+            placeholder="0"
+            placeholderTextColor={colors.onSurfaceTertiary}
+            style={[styles.input, { backgroundColor: colors.surfaceSecondary, color: colors.onSurface, borderColor: colors.border }]}
+          />
+        </Field>
+
+        {/* Harga Jual: langsung (Rp) atau kenaikan persen dari modal */}
+        <View style={{ gap: spacing.sm }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <Text style={{ fontFamily: Font.semibold, fontSize: 14, color: colors.onSurface }}>Harga Jual</Text>
+            <View style={[styles.modeToggle, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+              {(
+                [
+                  { key: "rp", label: "Rp" },
+                  { key: "persen", label: "Naik %" },
+                ] as const
+              ).map((m) => {
+                const active = sellMode === m.key;
+                return (
+                  <Pressable
+                    key={m.key}
+                    testID={`form-sellmode-${m.key}`}
+                    onPress={() => setSellMode(m.key)}
+                    style={[styles.modeItem, { backgroundColor: active ? colors.brand : "transparent" }]}
+                  >
+                    <Text style={{ fontFamily: Font.bold, fontSize: 12, color: active ? colors.onBrandPrimary : colors.onSurfaceSecondary }}>
+                      {m.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {sellMode === "rp" ? (
             <TextInput
               testID="form-sell-input"
               value={sell}
@@ -163,13 +198,60 @@ export default function ProductForm() {
               placeholderTextColor={colors.onSurfaceTertiary}
               style={[styles.input, { backgroundColor: colors.surfaceSecondary, color: colors.onSurface, borderColor: colors.border }]}
             />
-          </Field>
+          ) : (
+            <>
+              <View style={{ flexDirection: "row", gap: spacing.sm, alignItems: "center" }}>
+                <View style={[styles.input, { flex: 1, flexDirection: "row", alignItems: "center", gap: spacing.sm, backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+                  <TextInput
+                    testID="form-pct-input"
+                    value={pctStr}
+                    onChangeText={(t) => setPctStr(t.replace(/[^0-9]/g, ""))}
+                    keyboardType="number-pad"
+                    placeholder="cth: 10"
+                    placeholderTextColor={colors.onSurfaceTertiary}
+                    style={{ flex: 1, fontFamily: Font.medium, fontSize: 16, color: colors.onSurface, height: "100%" }}
+                  />
+                  <Text style={{ fontFamily: Font.bold, fontSize: 16, color: colors.onSurfaceTertiary }}>%</Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
+                {[5, 10, 15, 20, 25, 30].map((v) => {
+                  const active = pct === v && pctStr !== "";
+                  return (
+                    <Pressable
+                      key={v}
+                      testID={`form-pct-${v}`}
+                      onPress={() => setPctStr(String(v))}
+                      style={{
+                        height: 36,
+                        paddingHorizontal: spacing.md,
+                        borderRadius: radius.pill,
+                        justifyContent: "center",
+                        backgroundColor: active ? colors.brand : colors.surfaceSecondary,
+                        borderWidth: 1,
+                        borderColor: active ? colors.brand : colors.border,
+                      }}
+                    >
+                      <Text style={{ fontFamily: Font.semibold, fontSize: 13, color: active ? colors.onBrandPrimary : colors.onSurfaceSecondary }}>
+                        +{v}%
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text testID="form-sell-computed" style={{ fontFamily: Font.semibold, fontSize: 13, color: sellNum > 0 ? colors.success : colors.onSurfaceTertiary }}>
+                {costNum > 0 && pct > 0
+                  ? `Harga jual: ${formatRupiah(costNum)} + ${pct}% = ${formatRupiah(sellNum)}`
+                  : "Isi harga modal & persen kenaikan dulu"}
+              </Text>
+            </>
+          )}
         </View>
 
         {/* Profit preview */}
         <View style={[styles.profitCard, { backgroundColor: profit >= 0 ? colors.brandTertiary : colors.errorTint }]}>
           <Text style={{ fontFamily: Font.medium, fontSize: 13, color: colors.onSurfaceSecondary }}>
-            Keuntungan per unit
+            Keuntungan per unit{sellMode === "persen" && sellNum > 0 ? ` · Jual ${formatRupiah(sellNum)}` : ""}
           </Text>
           <Text style={{ fontFamily: Font.displayBold, fontSize: 24, color: profit >= 0 ? colors.brand : colors.error }}>
             {formatRupiah(profit)}
@@ -188,7 +270,7 @@ export default function ProductForm() {
           <Pressable style={[styles.sheet, { backgroundColor: colors.surface }]} onPress={() => {}}>
             <Text style={{ fontFamily: Font.bold, fontSize: 18, color: colors.onSurface }}>Hapus Barang?</Text>
             <Text style={{ fontFamily: Font.regular, fontSize: 14, color: colors.onSurfaceTertiary, marginBottom: spacing.md }}>
-              "{existing?.name}" akan dihapus dari stok.
+              &quot;{existing?.name}&quot; akan dihapus dari stok.
             </Text>
             <View style={{ flexDirection: "row", gap: spacing.md }}>
               <PrimaryButton label="Batal" variant="outline" onPress={() => setConfirmDel(false)} style={{ flex: 1 }} />
@@ -232,6 +314,8 @@ const styles = StyleSheet.create({
   },
   headerBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   input: { height: 54, borderRadius: radius.md, paddingHorizontal: spacing.lg, fontFamily: Font.medium, fontSize: 16, borderWidth: 1 },
+  modeToggle: { flexDirection: "row", borderRadius: radius.pill, borderWidth: 1, padding: 3, gap: 3 },
+  modeItem: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
   profitCard: { borderRadius: radius.md, padding: spacing.lg },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   sheet: { borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.xl, paddingBottom: spacing["2xl"], gap: spacing.sm },

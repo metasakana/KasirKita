@@ -78,6 +78,7 @@ export type StockEntry = {
   name: string;
   qty: number;
   note: string;
+  costPrice?: number; // harga beli saat stok masuk
   createdAt: string;
 };
 
@@ -170,7 +171,7 @@ type StoreCtx = {
   payDebt: (debtId: string, amount: number) => void;
 
   // stok masuk (restock)
-  restock: (productId: string, qty: number, note?: string) => boolean;
+  restock: (productId: string, qty: number, note?: string, newCostPrice?: number) => "ok" | "new" | "merged" | false;
 
   // categories
   addCategory: (name: string) => boolean;
@@ -446,19 +447,56 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // ---- Stok masuk (restock) ----
   const restock = useCallback(
-    (productId: string, qty: number, note?: string): boolean => {
+    (productId: string, qty: number, note?: string, newCostPrice?: number): "ok" | "new" | "merged" | false => {
       const q = Math.round(qty);
       if (q <= 0) return false;
       const p = products.find((x) => x.id === productId);
       if (!p) return false;
-      persistProducts(
-        products.map((x) => (x.id === productId ? { ...x, qty: x.qty + q, updatedAt: nowIso() } : x)),
-      );
+
+      const cost = newCostPrice && newCostPrice > 0 ? Math.round(newCostPrice) : p.costPrice;
+      let result: "ok" | "new" | "merged" = "ok";
+
+      if (cost === p.costPrice) {
+        // modal sama -> tambah qty ke barang yang sama
+        persistProducts(
+          products.map((x) => (x.id === productId ? { ...x, qty: x.qty + q, updatedAt: nowIso() } : x)),
+        );
+      } else {
+        // modal beda -> cari varian dengan nama & kategori sama dan modal sama
+        const variant = products.find(
+          (x) =>
+            x.id !== p.id &&
+            x.name.toLowerCase() === p.name.toLowerCase() &&
+            x.category === p.category &&
+            x.costPrice === cost,
+        );
+        if (variant) {
+          persistProducts(
+            products.map((x) => (x.id === variant.id ? { ...x, qty: x.qty + q, updatedAt: nowIso() } : x)),
+          );
+          result = "merged";
+        } else {
+          // buat stok baru: nama sama, modal beda
+          const newProd: Product = {
+            id: uid(),
+            name: p.name,
+            category: p.category,
+            qty: q,
+            costPrice: cost,
+            sellPrice: p.sellPrice,
+            createdAt: nowIso(),
+            updatedAt: nowIso(),
+          };
+          persistProducts([newProd, ...products]);
+          result = "new";
+        }
+      }
+
       persistStockEntries([
-        { id: uid(), productId, name: p.name, qty: q, note: note?.trim() || "", createdAt: nowIso() },
+        { id: uid(), productId, name: p.name, qty: q, note: note?.trim() || "", costPrice: cost, createdAt: nowIso() },
         ...stockEntries,
       ]);
-      return true;
+      return result;
     },
     [products, stockEntries, persistProducts, persistStockEntries],
   );

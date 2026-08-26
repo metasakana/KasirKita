@@ -63,3 +63,7 @@ Perubahan skema: Transaction kini punya `discount`, `total`, `status (lunas|huta
 - **Bagikan struk**: kini men-capture struk sebagai file GAMBAR (PNG, react-native-view-shot) lalu membuka share sheet (WhatsApp dll) via expo-sharing; cadangan PDF bila capture gagal. Di web tampil info bahwa fitur bagikan hanya di aplikasi HP.
 - **Ekspor CSV diperbaiki**: di web kini mengunduh file langsung via Blob (sebelumnya selalu gagal karena expo-file-system tidak didukung web); di HP tetap via share sheet.
 - **Nama aplikasi**: diganti menjadi "Kasir Kita" (app.json, layar login, footer pengaturan).
+
+## Update Sesi 2 — Fitur Harga Stok (TERUJI, iteration_5)
+6. **Harga jual via persen markup** — di form barang: toggle "Rp" (input langsung) / "Naik %" (modal × (1+persen)), chip cepat +5%..+30%, hasil dihitung & ditampilkan langsung beserta untung per unit.
+7. **Harga beli variatif saat restok** — modal restok punya input "harga beli baru (opsional)": jika beda dari modal lama, dibuat stok TERPISAH dengan nama sama tapi modal beda (harga jual disalin); jika sudah ada varian dengan modal itu, qty digabung. Riwayat stok masuk mencatat modal per entri.

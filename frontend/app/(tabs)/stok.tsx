@@ -5,13 +5,12 @@ import React, { useMemo, useState } from "react";
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { EmptyState, Header, PrimaryButton } from "@/src/components/common";
+import { ChipRow, EmptyState, Header, PrimaryButton } from "@/src/components/common";
 import { useToast } from "@/src/components/Toast";
 import { LOW_STOCK_THRESHOLD, Product, useStore } from "@/src/store/StoreContext";
 import { useTheme } from "@/src/theme/ThemeContext";
 import { Font, radius, spacing } from "@/src/theme/themes";
-import { formatRupiah } from "@/src/utils/format";
-import { ChipRow } from "@/src/components/common";
+import { formatRupiah, parseRupiah } from "@/src/utils/format";
 
 export default function Stok() {
   const router = useRouter();
@@ -25,6 +24,7 @@ export default function Stok() {
   const [restocking, setRestocking] = useState<Product | null>(null);
   const [restockQty, setRestockQty] = useState("");
   const [restockNote, setRestockNote] = useState("");
+  const [restockCost, setRestockCost] = useState("");
 
   const FILTERS = useMemo(() => ["Semua", ...categories], [categories]);
   const activeCategory = FILTERS.includes(category) ? category : "Semua";
@@ -48,9 +48,16 @@ export default function Stok() {
       toast.show("Masukkan jumlah stok masuk", "error");
       return;
     }
-    restock(restocking.id, q, restockNote);
+    const newCost = parseRupiah(restockCost) || undefined;
+    const res = restock(restocking.id, q, restockNote, newCost);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    toast.show(`Stok ${restocking.name} bertambah +${q}`, "success");
+    if (res === "new") {
+      toast.show(`Dibuat stok baru "${restocking.name}" modal ${formatRupiah(newCost || 0)}`, "success");
+    } else if (res === "merged") {
+      toast.show(`Stok digabung ke "${restocking.name}" modal ${formatRupiah(newCost || 0)}`, "success");
+    } else {
+      toast.show(`Stok ${restocking.name} bertambah +${q}`, "success");
+    }
     setRestocking(null);
   };
 
@@ -154,6 +161,7 @@ export default function Stok() {
               onRestock={() => {
                 setRestockQty("");
                 setRestockNote("");
+                setRestockCost("");
                 setRestocking(item);
               }}
             />
@@ -181,8 +189,11 @@ export default function Stok() {
           <Pressable style={[styles.sheet, { backgroundColor: colors.surface }]} onPress={() => {}}>
             <Text style={{ fontFamily: Font.bold, fontSize: 18, color: colors.onSurface }}>Stok Masuk / Restok</Text>
             <Text style={{ fontFamily: Font.regular, fontSize: 14, color: colors.onSurfaceTertiary }}>
-              {restocking?.name} · Stok saat ini{" "}
-              <Text style={{ fontFamily: Font.bold, color: colors.onSurface }}>{restocking?.qty}</Text>
+              {restocking?.name} · Stok{" "}
+              <Text style={{ fontFamily: Font.bold, color: colors.onSurface }}>{restocking?.qty}</Text> · Modal{" "}
+              <Text style={{ fontFamily: Font.bold, color: colors.onSurface }}>
+                {formatRupiah(restocking?.costPrice ?? 0)}
+              </Text>
             </Text>
             <View style={[styles.sheetInput, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
               <Ionicons name="add" size={20} color={colors.onSurfaceTertiary} />
@@ -197,6 +208,24 @@ export default function Stok() {
                 style={{ flex: 1, fontFamily: Font.displayBold, fontSize: 18, color: colors.onSurface, height: "100%" }}
               />
             </View>
+            <View style={[styles.sheetInput, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+              <Text style={{ fontFamily: Font.bold, fontSize: 15, color: colors.onSurfaceTertiary }}>Rp</Text>
+              <TextInput
+                testID="restock-cost-input"
+                value={restockCost ? parseRupiah(restockCost).toLocaleString("id-ID") : ""}
+                onChangeText={(t) => setRestockCost(t.replace(/[^0-9]/g, ""))}
+                keyboardType="number-pad"
+                placeholder={`Harga beli baru (opsional, skrg ${formatRupiah(restocking?.costPrice ?? 0)})`}
+                placeholderTextColor={colors.onSurfaceTertiary}
+                style={{ flex: 1, fontFamily: Font.medium, fontSize: 14, color: colors.onSurface, height: "100%" }}
+              />
+            </View>
+            {restockCost && parseRupiah(restockCost) !== (restocking?.costPrice ?? 0) ? (
+              <Text testID="restock-cost-info" style={{ fontFamily: Font.regular, fontSize: 12, color: colors.onSurfaceSecondary }}>
+                Harga beli berbeda → akan dibuat stok terpisah &quot;{restocking?.name}&quot; dengan modal{" "}
+                {formatRupiah(parseRupiah(restockCost))}
+              </Text>
+            ) : null}
             <TextInput
               testID="restock-note-input"
               value={restockNote}
@@ -217,7 +246,9 @@ export default function Stok() {
             />
             {restockQty ? (
               <Text style={{ fontFamily: Font.semibold, fontSize: 13, color: colors.success }}>
-                Stok baru: {(restocking?.qty ?? 0) + (parseInt(restockQty, 10) || 0)}
+                {restockCost && parseRupiah(restockCost) !== (restocking?.costPrice ?? 0)
+                  ? `Stok baru terpisah: +${parseInt(restockQty, 10) || 0} pcs`
+                  : `Stok baru: ${(restocking?.qty ?? 0) + (parseInt(restockQty, 10) || 0)}`}
               </Text>
             ) : null}
             <PrimaryButton testID="restock-save" label="Simpan Stok Masuk" icon="checkmark" onPress={handleRestock} />
