@@ -54,3 +54,7 @@ instan, kalkulator kasir & transaksi, laporan penjualan/keuangan dengan ekspor C
 3. **Kelola Kategori** — tombol ikon pricetags di header Stok → modal Kelola Kategori: tambah/ubah nama/hapus (barang ikut berpindah; hapus memindahkan barang ke "Lainnya"). Kategori dinamis (`wp_categories`) dipakai di Kasir, Stok, dan form barang.
 
 Perubahan skema: Transaction kini punya `discount`, `total`, `status (lunas|hutang)`, `customerName`. Transaksi lama dinormalisasi otomatis saat load.
+
+## Update Sesi 2 lanjutan — Fitur Tambahan (SELESAI & TERUJI, iteration_3)
+4. **Riwayat Cicilan** — kartu kasbon memiliki toggle "Riwayat Cicilan (n)" yang menampilkan setiap cicilan: nomor urut, tanggal & jam, dan jumlah (+Rp). Riwayat tetap tersimpan setelah lunas.
+5. **Stok Masuk** — tombol "+ Stok" di setiap barang (tab Stok) membuka sheet restok (jumlah + catatan, preview stok baru). Riwayat barang masuk di layar "Stok Masuk" (ikon jam di header Stok): nama barang, tanggal, catatan, +qty. Data: `wp_stock_entries`. Restok tidak memengaruhi laporan penjualan.

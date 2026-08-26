@@ -1,0 +1,31 @@
+{
+  "summary": "Tested 2 new features on WarungPintar (offline Expo/AsyncStorage POS). Feature 1 (Stok Masuk / Restock) works end-to-end: '+ Stok' pill button opens bottom sheet, empty qty shows 'Masukkan jumlah stok masuk' toast, qty input shows 'Stok baru:' preview, note field accepts input, saving increments product qty (12 -> 22 for Bimoli) and produces a green +10 success toast. Riwayat Stok Masuk modal via header time-icon (stok-history) shows correct '1 catatan · total 10 pcs' header, italic quoted note, and +10 green amount; empty state (stock-history-empty) shows before any restock; close (stock-history-close) works. Feature 2 (Riwayat Cicilan) works end-to-end: kasbon debt before payments has NO debt-history-toggle; after 1st partial payment (Rp 1.000) toggle 'Riwayat Cicilan (1)' appears and expands showing 'Cicilan 1 · <date>' with +Rp 1.000 in green; after 2nd (Rp 500) toggle becomes (2) with Cicilan 1 then Cicilan 2 in ascending order; tapping toggle again collapses the list; after Lunasi Semua the debt moves to 'Lunas' filter and toggle shows (3) with full Cicilan 1/2/3 history preserved. Regression: Tunai checkout still succeeds (Transaksi Berhasil receipt) and restock does NOT create a transaction. All testIDs referenced in the review request are present and functioning. No React Native red screens or crashes observed. Only console warnings are non-blocking react-native-web deprecations (shadow*, pointerEvents, useNativeDriver).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "react-native-web styles", "issue": "Console warns 'shadow* style props are deprecated. Use boxShadow' - non-blocking but appears repeatedly. Likely from FAB shadow in /app/frontend/app/(tabs)/stok.tsx:361-365 and other components using shadowColor/shadowOpacity/shadowRadius/shadowOffset."},
+      {"component": "react-native-web props", "issue": "Console warns 'props.pointerEvents is deprecated. Use style.pointerEvents' - non-blocking, coming from a legacy Modal/Pressable usage."},
+      {"component": "Animated (Toast)", "issue": "Console warns 'Animated: useNativeDriver is not supported because the native animated module is missing' when Toast animates on web. Cosmetic on web preview only; will work correctly in native build."}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "(Optional/cosmetic) Migrate remaining shadow* style props to boxShadow to silence RN-Web deprecation warnings.",
+    "(Optional/cosmetic) Replace legacy props.pointerEvents usages with style.pointerEvents."
+  ],
+  "critical_code_review_comments": [
+    "restock() correctly persists both product qty change and stockEntries; new entries are prepended so history is newest-first, while debt.payments are appended so Cicilan 1..N render in chronological (ascending) order - both match expected UX.",
+    "DebtRow only renders the Riwayat Cicilan toggle when debt.payments.length > 0, matching the spec 'debt with NO payments shows NO toggle'.",
+    "handleRestock validation is minimal but sufficient: parseInt of stripped digits; empty/zero -> error toast. Restock modal correctly resets restockQty/restockNote when reopening (setRestockQty('')/setRestockNote('') in onRestock callback)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (offline app - no backend)", "frontend": "100%"},
+  "seed_data_creation": "Auto-seeded 8 products on first launch; created 1 kasbon (Budi, Rp 19.000) and 1 stock entry (Bimoli +10, note 'kulakan pasar') as part of testing.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "App is 100% offline (AsyncStorage). Fresh browser session always shows 'Buat PIN Baru' - enter 123456 twice. Tab bar has data-testid tab-kasir/tab-stok/tab-kasbon/tab-laporan/tab-atur but there are 2 DOM elements per testID (accessibility duplicate); the first is not visible on web. Use JS click on the .offsetParent-visible one (see script in this iteration) or page.locator(...).last(). After checkout, receipt screen must be dismissed with 'Selesai' before navigating tabs. Product cards use data-testid product-card-<id>; tap adds one to cart. Checkout methods are tunai/kasbon (checkout-method-<key>). No backend calls exist.",
+  "rca_of_issue": "N/A - no bugs found in the tested features."
+}

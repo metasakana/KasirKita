@@ -72,6 +72,15 @@ export function debtRemaining(d: Debt): number {
   return Math.max(0, d.amount - debtPaidSum(d));
 }
 
+export type StockEntry = {
+  id: string;
+  productId: string;
+  name: string;
+  qty: number;
+  note: string;
+  createdAt: string;
+};
+
 const DEFAULT_CATEGORIES = [
   "Sembako",
   "Minuman",
@@ -88,6 +97,7 @@ const KEY_TX = "wp_transactions";
 const KEY_STORE_NAME = "wp_store_name";
 const KEY_DEBTS = "wp_debts";
 const KEY_CATEGORIES = "wp_categories";
+const KEY_STOCK_ENTRIES = "wp_stock_entries";
 const KEY_SEEDED = "wp_seeded_v1";
 const PIN_KEY = "wp_pin";
 
@@ -128,6 +138,7 @@ type StoreCtx = {
   transactions: Transaction[];
   debts: Debt[];
   categories: string[];
+  stockEntries: StockEntry[];
   storeName: string;
 
   // auth
@@ -158,6 +169,9 @@ type StoreCtx = {
   // debts (kasbon)
   payDebt: (debtId: string, amount: number) => void;
 
+  // stok masuk (restock)
+  restock: (productId: string, qty: number, note?: string) => boolean;
+
   // categories
   addCategory: (name: string) => boolean;
   renameCategory: (oldName: string, newName: string) => boolean;
@@ -175,6 +189,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
+  const [stockEntries, setStockEntries] = useState<StockEntry[]>([]);
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [storeName, setStoreNameState] = useState("Toko Saya");
   const [pinSet, setPinSet] = useState(false);
@@ -205,6 +220,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         status: t.status ?? ("lunas" as const),
       }));
       const savedDebts = await storage.getItem<Debt[]>(KEY_DEBTS, []);
+      const savedEntries = await storage.getItem<StockEntry[]>(KEY_STOCK_ENTRIES, []);
       let cats = await storage.getItem<string[] | null>(KEY_CATEGORIES, null);
       if (!cats || cats.length === 0) {
         cats = DEFAULT_CATEGORIES;
@@ -216,6 +232,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setProducts(prods || []);
       setTransactions(txs);
       setDebts(savedDebts || []);
+      setStockEntries(savedEntries || []);
       setCategories(cats);
       setStoreNameState(name || "Toko Saya");
       setPinSet(!!pin);
@@ -241,6 +258,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const persistCategories = useCallback((next: string[]) => {
     setCategories(next);
     storage.setItem(KEY_CATEGORIES, next);
+  }, []);
+
+  const persistStockEntries = useCallback((next: StockEntry[]) => {
+    setStockEntries(next);
+    storage.setItem(KEY_STOCK_ENTRIES, next);
   }, []);
 
   // ---- Auth ----
@@ -422,6 +444,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [debts, persistDebts],
   );
 
+  // ---- Stok masuk (restock) ----
+  const restock = useCallback(
+    (productId: string, qty: number, note?: string): boolean => {
+      const q = Math.round(qty);
+      if (q <= 0) return false;
+      const p = products.find((x) => x.id === productId);
+      if (!p) return false;
+      persistProducts(
+        products.map((x) => (x.id === productId ? { ...x, qty: x.qty + q, updatedAt: nowIso() } : x)),
+      );
+      persistStockEntries([
+        { id: uid(), productId, name: p.name, qty: q, note: note?.trim() || "", createdAt: nowIso() },
+        ...stockEntries,
+      ]);
+      return true;
+    },
+    [products, stockEntries, persistProducts, persistStockEntries],
+  );
+
   // ---- Categories ----
   const addCategory = useCallback(
     (name: string): boolean => {
@@ -471,10 +512,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await storage.setItem(KEY_PRODUCTS, []);
     await storage.setItem(KEY_TX, []);
     await storage.setItem(KEY_DEBTS, []);
+    await storage.setItem(KEY_STOCK_ENTRIES, []);
     await storage.setItem(KEY_SEEDED, true);
     setProducts([]);
     setTransactions([]);
     setDebts([]);
+    setStockEntries([]);
     setCart({});
   }, []);
 
@@ -485,6 +528,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       transactions,
       debts,
       categories,
+      stockEntries,
       storeName,
       pinSet,
       unlocked,
@@ -504,6 +548,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       clearCart,
       checkout,
       payDebt,
+      restock,
       addCategory,
       renameCategory,
       deleteCategory,
@@ -511,9 +556,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       resetAllData,
     }),
     [
-      ready, products, transactions, debts, categories, storeName, pinSet, unlocked, setPin, verifyPin,
+      ready, products, transactions, debts, categories, stockEntries, storeName, pinSet, unlocked, setPin, verifyPin,
       unlock, lock, clearPin, addProduct, updateProduct, deleteProduct, getProduct, cart,
-      addToCart, setCartQty, removeFromCart, clearCart, checkout, payDebt,
+      addToCart, setCartQty, removeFromCart, clearCart, checkout, payDebt, restock,
       addCategory, renameCategory, deleteCategory, setStoreName, resetAllData,
     ],
   );

@@ -115,3 +115,7 @@ Implementation notes:
   - receipt (screen + print HTML): shows Subtotal/Diskon/Total, and for kasbon: Pelanggan, Dibayar(DP), Sisa Kasbon, badge BELUM LUNAS.
   - laporan: gross uses tx.total (after discount); CSV has Diskon/Total/Status columns; KASBON badge in history rows.
   - This is a fully OFFLINE app - no backend testing needed. PIN: create 123456 on first launch.
+
+## Session 2 continuation - 2 more features (to test in iteration_3):
+  4. Riwayat Cicilan: in Kasbon tab, debt cards with payments show toggle "Riwayat Cicilan (n)" (testID debt-history-toggle-<id>) expanding a list (debt-history-list-<id>) of each installment: "Cicilan N · date" + "+Rp amount".
+  5. Stok Masuk: in Stok tab each product row has "+ Stok" button (testID stock-restock-<id>) opening bottom-sheet modal: qty (restock-qty-input), note (restock-note-input), preview "Stok baru: X", save (restock-save) -> product qty increases + StockEntry recorded (wp_stock_entries). New header button time-outline (testID stok-history) opens /stock-history modal listing entries (name, date, note, +qty) with count/total in header, empty state stock-history-empty.

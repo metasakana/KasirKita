@@ -162,6 +162,7 @@ export default function Hutang() {
 }
 
 function DebtRow({ debt, colors, onPay }: { debt: Debt; colors: any; onPay: () => void }) {
+  const [expanded, setExpanded] = useState(false);
   const paid = debtPaidSum(debt);
   const remaining = debtRemaining(debt);
   const lunas = debt.status === "lunas";
@@ -225,6 +226,46 @@ function DebtRow({ debt, colors, onPay }: { debt: Debt; colors: any; onPay: () =
           </Pressable>
         ) : null}
       </View>
+
+      {/* Riwayat cicilan */}
+      {debt.payments.length > 0 ? (
+        <View style={{ marginTop: spacing.sm }}>
+          <Pressable
+            testID={`debt-history-toggle-${debt.id}`}
+            onPress={() => setExpanded((e) => !e)}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 6, minHeight: 32 }}
+          >
+            <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={14} color={colors.brand} />
+            <Text style={{ fontFamily: Font.semibold, fontSize: 12, color: colors.brand }}>
+              Riwayat Cicilan ({debt.payments.length})
+            </Text>
+          </Pressable>
+          {expanded ? (
+            <View
+              testID={`debt-history-list-${debt.id}`}
+              style={{
+                gap: 8,
+                marginTop: 2,
+                borderTopWidth: StyleSheet.hairlineWidth,
+                borderTopColor: colors.border,
+                paddingTop: spacing.sm,
+              }}
+            >
+              {debt.payments.map((p, i) => (
+                <View key={p.id} style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success }} />
+                  <Text style={{ flex: 1, fontFamily: Font.regular, fontSize: 12, color: colors.onSurfaceSecondary }}>
+                    Cicilan {i + 1} · {formatDateTime(p.date)}
+                  </Text>
+                  <Text style={{ fontFamily: Font.bold, fontSize: 13, color: colors.success }}>
+                    +{formatRupiah(p.amount)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
