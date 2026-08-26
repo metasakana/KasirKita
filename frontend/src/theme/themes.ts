@@ -1,4 +1,4 @@
-// Theme palettes for WarungPintar POS.
+// Theme palettes for Kasir Kita POS.
 // Three modes per user request: terang (bright/default), gelap (dark), netral (neutral).
 // Colors sourced from design_guidelines.json. NO blues/purples.
 

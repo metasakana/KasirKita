@@ -58,3 +58,8 @@ Perubahan skema: Transaction kini punya `discount`, `total`, `status (lunas|huta
 ## Update Sesi 2 lanjutan — Fitur Tambahan (SELESAI & TERUJI, iteration_3)
 4. **Riwayat Cicilan** — kartu kasbon memiliki toggle "Riwayat Cicilan (n)" yang menampilkan setiap cicilan: nomor urut, tanggal & jam, dan jumlah (+Rp). Riwayat tetap tersimpan setelah lunas.
 5. **Stok Masuk** — tombol "+ Stok" di setiap barang (tab Stok) membuka sheet restok (jumlah + catatan, preview stok baru). Riwayat barang masuk di layar "Stok Masuk" (ikon jam di header Stok): nama barang, tanggal, catatan, +qty. Data: `wp_stock_entries`. Restok tidak memengaruhi laporan penjualan.
+
+## Update Sesi 2 — Perbaikan Bug + Rename (TERUJI, iteration_4)
+- **Bagikan struk**: kini men-capture struk sebagai file GAMBAR (PNG, react-native-view-shot) lalu membuka share sheet (WhatsApp dll) via expo-sharing; cadangan PDF bila capture gagal. Di web tampil info bahwa fitur bagikan hanya di aplikasi HP.
+- **Ekspor CSV diperbaiki**: di web kini mengunduh file langsung via Blob (sebelumnya selalu gagal karena expo-file-system tidak didukung web); di HP tetap via share sheet.
+- **Nama aplikasi**: diganti menjadi "Kasir Kita" (app.json, layar login, footer pengaturan).

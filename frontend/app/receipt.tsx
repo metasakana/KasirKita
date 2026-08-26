@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Sharing from "expo-sharing";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useRef } from "react";
+import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { captureRef } from "react-native-view-shot";
 
 import { PrimaryButton } from "@/src/components/common";
 import { useToast } from "@/src/components/Toast";
@@ -21,8 +23,34 @@ export default function Receipt() {
   const toast = useToast();
 
   const tx = transactions.find((t) => t.id === id);
+  const receiptRef = useRef<View>(null);
 
   const done = () => router.replace("/(tabs)");
+
+  const handleShare = async () => {
+    if (!tx) return;
+    try {
+      // Ubah struk menjadi file GAMBAR lalu buka share sheet (WhatsApp, dll)
+      const uri = await captureRef(receiptRef, { format: "png", quality: 1, result: "tmpfile" });
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        toast.show("Fitur bagikan hanya tersedia di aplikasi HP (Android/iOS)", "error");
+        return;
+      }
+      await Sharing.shareAsync(uri, { mimeType: "image/png", dialogTitle: "Struk Belanja" });
+    } catch {
+      if (Platform.OS === "web") {
+        toast.show("Fitur bagikan hanya tersedia di aplikasi HP (Android/iOS)", "error");
+        return;
+      }
+      // Cadangan: bagikan sebagai PDF
+      try {
+        await shareReceipt(tx, storeName);
+      } catch {
+        toast.show("Gagal membagikan struk", "error");
+      }
+    }
+  };
 
   if (!tx) {
     return (
@@ -51,7 +79,12 @@ export default function Receipt() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <View style={[styles.receipt, { backgroundColor: colors.surface }]} testID="receipt-card">
+        <View
+          ref={receiptRef}
+          collapsable={false}
+          style={[styles.receipt, { backgroundColor: colors.surface }]}
+          testID="receipt-card"
+        >
           <Text style={{ fontFamily: Font.displayBold, fontSize: 20, color: colors.onSurface, textAlign: "center" }}>
             {storeName}
           </Text>
@@ -131,15 +164,9 @@ export default function Receipt() {
           <PrimaryButton
             testID="receipt-share"
             label="Bagikan"
-            icon="share-social-outline"
+            icon="logo-whatsapp"
             style={{ flex: 1 }}
-            onPress={async () => {
-              try {
-                await shareReceipt(tx, storeName);
-              } catch {
-                toast.show("Gagal membagikan struk", "error");
-              }
-            }}
+            onPress={handleShare}
           />
         </View>
       </ScrollView>

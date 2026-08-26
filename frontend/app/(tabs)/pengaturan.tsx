@@ -153,7 +153,7 @@ export default function Pengaturan() {
         </Section>
 
         <Text style={{ textAlign: "center", fontFamily: Font.regular, fontSize: 12, color: colors.onSurfaceTertiary }}>
-          WarungPintar · Data tersimpan di HP ini
+          Kasir Kita · Data tersimpan di HP ini
         </Text>
       </ScrollView>
 

@@ -120,7 +120,7 @@ export default function Login() {
           <View style={[styles.logo, { backgroundColor: "rgba(255,255,255,0.9)" }]}>
             <Ionicons name="storefront" size={30} color="#FF6B00" />
           </View>
-          <Text style={styles.brandName}>WarungPintar</Text>
+          <Text style={styles.brandName}>Kasir Kita</Text>
           <Text style={styles.brandTag}>Kasir & Stok Toko Kelontong</Text>
         </View>
       </View>

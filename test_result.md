@@ -119,3 +119,8 @@ Implementation notes:
 ## Session 2 continuation - 2 more features (to test in iteration_3):
   4. Riwayat Cicilan: in Kasbon tab, debt cards with payments show toggle "Riwayat Cicilan (n)" (testID debt-history-toggle-<id>) expanding a list (debt-history-list-<id>) of each installment: "Cicilan N · date" + "+Rp amount".
   5. Stok Masuk: in Stok tab each product row has "+ Stok" button (testID stock-restock-<id>) opening bottom-sheet modal: qty (restock-qty-input), note (restock-note-input), preview "Stok baru: X", save (restock-save) -> product qty increases + StockEntry recorded (wp_stock_entries). New header button time-outline (testID stok-history) opens /stock-history modal listing entries (name, date, note, +qty) with count/total in header, empty state stock-history-empty.
+
+## Session 2 - Bug fixes + rename (to test in iteration_4):
+  A. "Bagikan" on receipt now shares receipt as PNG IMAGE via react-native-view-shot captureRef + expo-sharing (share sheet -> WhatsApp). On web, sharing unavailable -> shows toast "Fitur bagikan hanya tersedia di aplikasi HP (Android/iOS)". Fallback to PDF share on native capture failure. Button icon now logo-whatsapp, testID receipt-share unchanged.
+  B. CSV export fixed: /app/frontend/src/utils/csv.ts now branches on Platform.OS==="web" -> creates Blob + triggers browser download (a.download). Native path unchanged (File/Paths + Sharing). Used by laporan.tsx (laporan-<period>.csv) and pengaturan.tsx (data-barang.csv, testID setting-export-products). Previously ALWAYS failed on web ("Gagal mengekspor CSV" toast).
+  C. App renamed to "Kasir Kita": app.json name, login.tsx brand, pengaturan.tsx footer.
