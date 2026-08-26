@@ -19,6 +19,7 @@ type TabDef = {
 const TABS: TabDef[] = [
   { name: "index", label: "Kasir", icon: "calculator-outline", iconActive: "calculator" },
   { name: "stok", label: "Stok", icon: "cube-outline", iconActive: "cube" },
+  { name: "hutang", label: "Kasbon", icon: "wallet-outline", iconActive: "wallet" },
   { name: "laporan", label: "Laporan", icon: "bar-chart-outline", iconActive: "bar-chart" },
   { name: "pengaturan", label: "Atur", icon: "settings-outline", iconActive: "settings" },
 ];

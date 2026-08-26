@@ -43,8 +43,10 @@ export default function Receipt() {
         <Text style={{ fontFamily: Font.displayBold, fontSize: 22, color: colors.onSurface, marginTop: spacing.md }}>
           Transaksi Berhasil
         </Text>
-        <Text style={{ fontFamily: Font.medium, fontSize: 14, color: colors.onSurfaceTertiary }}>
-          Kembalian {formatRupiah(tx.change)}
+        <Text style={{ fontFamily: Font.medium, fontSize: 14, color: tx.status === "hutang" ? colors.error : colors.onSurfaceTertiary }}>
+          {tx.status === "hutang"
+            ? `Kasbon · Sisa ${formatRupiah(tx.total - tx.paid)}`
+            : `Kembalian ${formatRupiah(tx.change)}`}
         </Text>
       </View>
 
@@ -78,9 +80,32 @@ export default function Receipt() {
 
           <View style={[styles.dashed, { borderColor: colors.borderStrong }]} />
 
-          <Row label="Total" value={formatRupiah(tx.subtotal)} colors={colors} bold />
-          <Row label="Tunai" value={formatRupiah(tx.paid)} colors={colors} />
-          <Row label="Kembalian" value={formatRupiah(tx.change)} colors={colors} />
+          {tx.discount > 0 ? (
+            <>
+              <Row label="Subtotal" value={formatRupiah(tx.subtotal)} colors={colors} />
+              <Row label="Diskon" value={`-${formatRupiah(tx.discount)}`} colors={colors} />
+            </>
+          ) : null}
+          <Row label="Total" value={formatRupiah(tx.total)} colors={colors} bold />
+          {tx.status === "hutang" ? (
+            <>
+              <Row label="Pelanggan" value={tx.customerName || "-"} colors={colors} />
+              <Row label="Dibayar (DP)" value={formatRupiah(tx.paid)} colors={colors} />
+              <Row label="Sisa Kasbon" value={formatRupiah(tx.total - tx.paid)} colors={colors} bold />
+            </>
+          ) : (
+            <>
+              <Row label="Tunai" value={formatRupiah(tx.paid)} colors={colors} />
+              <Row label="Kembalian" value={formatRupiah(tx.change)} colors={colors} />
+            </>
+          )}
+          {tx.status === "hutang" ? (
+            <View style={{ alignItems: "center", marginTop: spacing.sm }}>
+              <View style={{ backgroundColor: colors.error, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: 4 }}>
+                <Text style={{ fontFamily: Font.bold, fontSize: 12, color: "#fff" }}>BELUM LUNAS (KASBON)</Text>
+              </View>
+            </View>
+          ) : null}
 
           <View style={[styles.dashed, { borderColor: colors.borderStrong }]} />
           <Text style={{ textAlign: "center", fontFamily: Font.regular, fontSize: 12, color: colors.onSurfaceTertiary }}>

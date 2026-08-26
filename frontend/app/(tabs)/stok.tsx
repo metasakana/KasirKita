@@ -6,31 +6,32 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-na
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { EmptyState, Header, PrimaryButton } from "@/src/components/common";
-import { CATEGORIES, LOW_STOCK_THRESHOLD, Product, useStore } from "@/src/store/StoreContext";
+import { LOW_STOCK_THRESHOLD, Product, useStore } from "@/src/store/StoreContext";
 import { useTheme } from "@/src/theme/ThemeContext";
 import { Font, radius, spacing } from "@/src/theme/themes";
 import { formatRupiah } from "@/src/utils/format";
 import { ChipRow } from "@/src/components/common";
 
-const FILTERS = ["Semua", ...CATEGORIES];
-
 export default function Stok() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { products } = useStore();
+  const { products, categories } = useStore();
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Semua");
+
+  const FILTERS = useMemo(() => ["Semua", ...categories], [categories]);
+  const activeCategory = FILTERS.includes(category) ? category : "Semua";
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return products.filter((p) => {
       const matchQ = !q || p.name.toLowerCase().includes(q);
-      const matchC = category === "Semua" || p.category === category;
+      const matchC = activeCategory === "Semua" || p.category === activeCategory;
       return matchQ && matchC;
     });
-  }, [products, query, category]);
+  }, [products, query, activeCategory]);
 
   const lowCount = products.filter((p) => p.qty < LOW_STOCK_THRESHOLD).length;
   const tabBarH = (insets.bottom > 0 ? insets.bottom : spacing.md) + 56;
@@ -41,6 +42,22 @@ export default function Stok() {
         title="Stok Barang"
         subtitle={`${products.length} barang · ${lowCount} stok menipis`}
         testID="stok-header"
+        right={
+          <Pressable
+            testID="stok-manage-categories"
+            onPress={() => router.push("/categories")}
+            style={{
+              width: 44,
+              height: 44,
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: radius.sm,
+              backgroundColor: colors.surfaceSecondary,
+            }}
+          >
+            <Ionicons name="pricetags-outline" size={22} color={colors.brand} />
+          </Pressable>
+        }
       />
 
       <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
@@ -62,7 +79,7 @@ export default function Stok() {
         </View>
       </View>
 
-      <ChipRow items={FILTERS} selected={category} onSelect={setCategory} />
+      <ChipRow items={FILTERS} selected={activeCategory} onSelect={setCategory} />
 
       {filtered.length === 0 ? (
         <EmptyState

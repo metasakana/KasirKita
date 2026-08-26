@@ -35,14 +35,44 @@ export type Transaction = {
   id: string;
   items: TxItem[];
   subtotal: number;
+  discount: number; // potongan harga (Rp)
+  total: number; // subtotal - discount
   totalCost: number;
   profit: number;
   paid: number;
   change: number;
+  status: "lunas" | "hutang";
+  customerName?: string;
   createdAt: string;
 };
 
-export const CATEGORIES = [
+export type DebtPayment = {
+  id: string;
+  amount: number;
+  date: string;
+};
+
+export type Debt = {
+  id: string;
+  txId: string;
+  customerName: string;
+  phone: string;
+  note: string;
+  amount: number; // total hutang awal
+  payments: DebtPayment[];
+  status: "belum" | "lunas";
+  createdAt: string;
+};
+
+export function debtPaidSum(d: Debt): number {
+  return d.payments.reduce((s, p) => s + p.amount, 0);
+}
+
+export function debtRemaining(d: Debt): number {
+  return Math.max(0, d.amount - debtPaidSum(d));
+}
+
+const DEFAULT_CATEGORIES = [
   "Sembako",
   "Minuman",
   "Snacking",
@@ -56,6 +86,8 @@ export const LOW_STOCK_THRESHOLD = 5;
 const KEY_PRODUCTS = "wp_products";
 const KEY_TX = "wp_transactions";
 const KEY_STORE_NAME = "wp_store_name";
+const KEY_DEBTS = "wp_debts";
+const KEY_CATEGORIES = "wp_categories";
 const KEY_SEEDED = "wp_seeded_v1";
 const PIN_KEY = "wp_pin";
 
@@ -84,10 +116,18 @@ const SEED: Omit<Product, "id" | "createdAt" | "updatedAt">[] = [
 // ---------------------------------------------------------------------------
 // Context
 // ---------------------------------------------------------------------------
+export type CheckoutOpts = {
+  paid: number;
+  discount?: number;
+  debt?: { customerName: string; phone?: string; note?: string };
+};
+
 type StoreCtx = {
   ready: boolean;
   products: Product[];
   transactions: Transaction[];
+  debts: Debt[];
+  categories: string[];
   storeName: string;
 
   // auth
@@ -113,7 +153,15 @@ type StoreCtx = {
   clearCart: () => void;
 
   // checkout
-  checkout: (paid: number) => Transaction | null;
+  checkout: (opts: CheckoutOpts) => Transaction | null;
+
+  // debts (kasbon)
+  payDebt: (debtId: string, amount: number) => void;
+
+  // categories
+  addCategory: (name: string) => boolean;
+  renameCategory: (oldName: string, newName: string) => boolean;
+  deleteCategory: (name: string) => void;
 
   // settings
   setStoreName: (name: string) => void;
@@ -126,6 +174,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [storeName, setStoreNameState] = useState("Toko Saya");
   const [pinSet, setPinSet] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
@@ -146,12 +196,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         await storage.setItem(KEY_PRODUCTS, prods);
         await storage.setItem(KEY_SEEDED, true);
       }
-      const txs = await storage.getItem<Transaction[]>(KEY_TX, []);
+      const txsRaw = await storage.getItem<Transaction[]>(KEY_TX, []);
+      // normalisasi transaksi lama (sebelum fitur diskon & kasbon)
+      const txs = (txsRaw || []).map((t) => ({
+        ...t,
+        discount: t.discount || 0,
+        total: t.total ?? t.subtotal,
+        status: t.status ?? ("lunas" as const),
+      }));
+      const savedDebts = await storage.getItem<Debt[]>(KEY_DEBTS, []);
+      let cats = await storage.getItem<string[] | null>(KEY_CATEGORIES, null);
+      if (!cats || cats.length === 0) {
+        cats = DEFAULT_CATEGORIES;
+        await storage.setItem(KEY_CATEGORIES, cats);
+      }
       const name = await storage.getItem<string>(KEY_STORE_NAME, "Toko Saya");
       const pin = await storage.secureGet<string>(PIN_KEY, "");
 
       setProducts(prods || []);
-      setTransactions(txs || []);
+      setTransactions(txs);
+      setDebts(savedDebts || []);
+      setCategories(cats);
       setStoreNameState(name || "Toko Saya");
       setPinSet(!!pin);
       setReady(true);
@@ -166,6 +231,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const persistTx = useCallback((next: Transaction[]) => {
     setTransactions(next);
     storage.setItem(KEY_TX, next);
+  }, []);
+
+  const persistDebts = useCallback((next: Debt[]) => {
+    setDebts(next);
+    storage.setItem(KEY_DEBTS, next);
+  }, []);
+
+  const persistCategories = useCallback((next: string[]) => {
+    setCategories(next);
+    storage.setItem(KEY_CATEGORIES, next);
   }, []);
 
   // ---- Auth ----
@@ -262,7 +337,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // ---- Checkout ----
   const checkout = useCallback(
-    (paid: number): Transaction | null => {
+    (opts: CheckoutOpts): Transaction | null => {
       const items: TxItem[] = [];
       let subtotal = 0;
       let totalCost = 0;
@@ -281,14 +356,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
       if (items.length === 0) return null;
 
+      const discount = Math.max(0, Math.min(Math.round(opts.discount || 0), subtotal));
+      const total = subtotal - discount;
+      const isDebt = !!opts.debt;
+      const paid = isDebt ? Math.max(0, Math.min(opts.paid, total)) : opts.paid;
+
       const tx: Transaction = {
         id: uid(),
         items,
         subtotal,
+        discount,
+        total,
         totalCost,
-        profit: subtotal - totalCost,
+        profit: total - totalCost,
         paid,
-        change: paid - subtotal,
+        change: isDebt ? 0 : paid - total,
+        status: isDebt ? "hutang" : "lunas",
+        customerName: opts.debt?.customerName?.trim() || undefined,
         createdAt: nowIso(),
       };
 
@@ -300,10 +384,81 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       });
       persistProducts(nextProducts);
       persistTx([tx, ...transactions]);
+
+      if (isDebt && opts.debt) {
+        const debt: Debt = {
+          id: uid(),
+          txId: tx.id,
+          customerName: opts.debt.customerName.trim(),
+          phone: opts.debt.phone?.trim() || "",
+          note: opts.debt.note?.trim() || "",
+          amount: total - paid,
+          payments: [],
+          status: "belum",
+          createdAt: nowIso(),
+        };
+        persistDebts([debt, ...debts]);
+      }
+
       setCart({});
       return tx;
     },
-    [cart, products, transactions, persistProducts, persistTx],
+    [cart, products, transactions, debts, persistProducts, persistTx, persistDebts],
+  );
+
+  // ---- Debts (kasbon) ----
+  const payDebt = useCallback(
+    (debtId: string, amount: number) => {
+      if (amount <= 0) return;
+      persistDebts(
+        debts.map((d) => {
+          if (d.id !== debtId) return d;
+          const payments = [...d.payments, { id: uid(), amount: Math.round(amount), date: nowIso() }];
+          const paidSum = payments.reduce((s, p) => s + p.amount, 0);
+          return { ...d, payments, status: paidSum >= d.amount ? ("lunas" as const) : ("belum" as const) };
+        }),
+      );
+    },
+    [debts, persistDebts],
+  );
+
+  // ---- Categories ----
+  const addCategory = useCallback(
+    (name: string): boolean => {
+      const n = name.trim();
+      if (!n) return false;
+      if (categories.some((c) => c.toLowerCase() === n.toLowerCase())) return false;
+      persistCategories([...categories, n]);
+      return true;
+    },
+    [categories, persistCategories],
+  );
+
+  const renameCategory = useCallback(
+    (oldName: string, newName: string): boolean => {
+      const n = newName.trim();
+      if (!n) return false;
+      if (categories.some((c) => c !== oldName && c.toLowerCase() === n.toLowerCase())) return false;
+      persistCategories(categories.map((c) => (c === oldName ? n : c)));
+      persistProducts(
+        products.map((p) => (p.category === oldName ? { ...p, category: n, updatedAt: nowIso() } : p)),
+      );
+      return true;
+    },
+    [categories, products, persistCategories, persistProducts],
+  );
+
+  const deleteCategory = useCallback(
+    (name: string) => {
+      if (categories.length <= 1) return;
+      const next = categories.filter((c) => c !== name);
+      const fallback = next.includes("Lainnya") ? "Lainnya" : next[next.length - 1];
+      persistCategories(next);
+      persistProducts(
+        products.map((p) => (p.category === name ? { ...p, category: fallback, updatedAt: nowIso() } : p)),
+      );
+    },
+    [categories, products, persistCategories, persistProducts],
   );
 
   // ---- Settings ----
@@ -315,9 +470,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const resetAllData = useCallback(async () => {
     await storage.setItem(KEY_PRODUCTS, []);
     await storage.setItem(KEY_TX, []);
+    await storage.setItem(KEY_DEBTS, []);
     await storage.setItem(KEY_SEEDED, true);
     setProducts([]);
     setTransactions([]);
+    setDebts([]);
     setCart({});
   }, []);
 
@@ -326,6 +483,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ready,
       products,
       transactions,
+      debts,
+      categories,
       storeName,
       pinSet,
       unlocked,
@@ -344,13 +503,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       removeFromCart,
       clearCart,
       checkout,
+      payDebt,
+      addCategory,
+      renameCategory,
+      deleteCategory,
       setStoreName,
       resetAllData,
     }),
     [
-      ready, products, transactions, storeName, pinSet, unlocked, setPin, verifyPin,
+      ready, products, transactions, debts, categories, storeName, pinSet, unlocked, setPin, verifyPin,
       unlock, lock, clearPin, addProduct, updateProduct, deleteProduct, getProduct, cart,
-      addToCart, setCartQty, removeFromCart, clearCart, checkout, setStoreName, resetAllData,
+      addToCart, setCartQty, removeFromCart, clearCart, checkout, payDebt,
+      addCategory, renameCategory, deleteCategory, setStoreName, resetAllData,
     ],
   );
 

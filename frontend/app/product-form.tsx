@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PrimaryButton } from "@/src/components/common";
 import { useToast } from "@/src/components/Toast";
-import { CATEGORIES, useStore } from "@/src/store/StoreContext";
+import { useStore } from "@/src/store/StoreContext";
 import { useTheme } from "@/src/theme/ThemeContext";
 import { Font, radius, spacing } from "@/src/theme/themes";
 import { formatRupiah, parseRupiah } from "@/src/utils/format";
@@ -17,14 +17,14 @@ export default function ProductForm() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { getProduct, addProduct, updateProduct, deleteProduct } = useStore();
+  const { getProduct, addProduct, updateProduct, deleteProduct, categories } = useStore();
   const toast = useToast();
 
   const existing = id ? getProduct(id) : undefined;
   const editing = !!existing;
 
   const [name, setName] = useState(existing?.name ?? "");
-  const [category, setCategory] = useState(existing?.category ?? CATEGORIES[0]);
+  const [category, setCategory] = useState(existing?.category ?? categories[0] ?? "Lainnya");
   const [qty, setQty] = useState(existing ? String(existing.qty) : "");
   const [cost, setCost] = useState(existing ? String(existing.costPrice) : "");
   const [sell, setSell] = useState(existing ? String(existing.sellPrice) : "");
@@ -33,6 +33,11 @@ export default function ProductForm() {
   const costNum = parseRupiah(cost);
   const sellNum = parseRupiah(sell);
   const profit = sellNum - costNum;
+
+  const catOptions = useMemo(
+    () => (category && !categories.includes(category) ? [category, ...categories] : categories),
+    [category, categories],
+  );
 
   const save = () => {
     if (!name.trim()) {
@@ -97,7 +102,7 @@ export default function ProductForm() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: spacing.sm }}
           >
-            {CATEGORIES.map((c) => {
+            {catOptions.map((c) => {
               const active = c === category;
               return (
                 <Pressable

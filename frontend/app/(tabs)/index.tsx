@@ -8,32 +8,33 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ChipRow, EmptyState, PrimaryButton } from "@/src/components/common";
 import { Header } from "@/src/components/common";
-import { CATEGORIES, LOW_STOCK_THRESHOLD, Product, useStore } from "@/src/store/StoreContext";
+import { LOW_STOCK_THRESHOLD, Product, useStore } from "@/src/store/StoreContext";
 import { useToast } from "@/src/components/Toast";
 import { useTheme } from "@/src/theme/ThemeContext";
 import { Font, radius, spacing } from "@/src/theme/themes";
 import { formatRupiah } from "@/src/utils/format";
 
-const FILTERS = ["Semua", ...CATEGORIES];
-
 export default function Kasir() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { products, cart, addToCart } = useStore();
+  const { products, cart, addToCart, categories } = useStore();
   const toast = useToast();
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Semua");
 
+  const FILTERS = useMemo(() => ["Semua", ...categories], [categories]);
+  const activeCategory = FILTERS.includes(category) ? category : "Semua";
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return products.filter((p) => {
       const matchQ = !q || p.name.toLowerCase().includes(q);
-      const matchC = category === "Semua" || p.category === category;
+      const matchC = activeCategory === "Semua" || p.category === activeCategory;
       return matchQ && matchC;
     });
-  }, [products, query, category]);
+  }, [products, query, activeCategory]);
 
   const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
   const cartTotal = useMemo(() => {
@@ -87,7 +88,7 @@ export default function Kasir() {
         </View>
       </View>
 
-      <ChipRow items={FILTERS} selected={category} onSelect={setCategory} />
+      <ChipRow items={FILTERS} selected={activeCategory} onSelect={setCategory} />
 
       {filtered.length === 0 ? (
         <EmptyState

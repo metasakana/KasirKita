@@ -47,7 +47,7 @@ export default function Laporan() {
   const totals = useMemo(() => {
     return inRange.reduce(
       (acc, t) => {
-        acc.gross += t.subtotal;
+        acc.gross += t.total;
         acc.cost += t.totalCost;
         acc.profit += t.profit;
         return acc;
@@ -65,7 +65,7 @@ export default function Laporan() {
     }
     const rows: (string | number)[][] = [
       [`Laporan Penjualan ${storeName} - ${period}`],
-      ["No Transaksi", "Tanggal", "Jumlah Item", "Total Jual", "Total Modal", "Keuntungan", "Tunai", "Kembalian"],
+      ["No Transaksi", "Tanggal", "Jumlah Item", "Subtotal", "Diskon", "Total", "Total Modal", "Keuntungan", "Dibayar", "Kembalian", "Status"],
     ];
     inRange.forEach((t) => {
       const items = t.items.reduce((a, b) => a + b.qty, 0);
@@ -74,14 +74,17 @@ export default function Laporan() {
         formatDateTime(t.createdAt),
         items,
         t.subtotal,
+        t.discount,
+        t.total,
         t.totalCost,
         t.profit,
         t.paid,
         t.change,
+        t.status === "hutang" ? "Kasbon" : "Lunas",
       ]);
     });
     rows.push([]);
-    rows.push(["", "", "TOTAL", totals.gross, totals.cost, totals.profit]);
+    rows.push(["", "", "", "", "TOTAL", totals.gross, totals.cost, totals.profit]);
     try {
       await exportCSV(`laporan-${period}.csv`, rows);
     } catch {
@@ -201,11 +204,19 @@ function TxRow({ tx, colors }: { tx: Transaction; colors: any }) {
         <Ionicons name="receipt" size={18} color={colors.brand} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontFamily: Font.semibold, fontSize: 14, color: colors.onSurface }}>
-          {formatNumber(items)} item · {formatRupiah(tx.subtotal)}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Text style={{ fontFamily: Font.semibold, fontSize: 14, color: colors.onSurface }}>
+            {formatNumber(items)} item · {formatRupiah(tx.total)}
+          </Text>
+          {tx.status === "hutang" ? (
+            <View style={{ backgroundColor: colors.error, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+              <Text style={{ fontFamily: Font.bold, fontSize: 9, color: "#fff" }}>KASBON</Text>
+            </View>
+          ) : null}
+        </View>
         <Text style={{ fontFamily: Font.regular, fontSize: 12, color: colors.onSurfaceTertiary }}>
           {formatDateTime(tx.createdAt)}
+          {tx.discount > 0 ? ` · Diskon ${formatRupiah(tx.discount)}` : ""}
         </Text>
       </View>
       <View style={{ alignItems: "flex-end" }}>

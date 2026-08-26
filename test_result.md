@@ -101,3 +101,17 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+## Session 2 (Fork) - New Features Added (June 2026)
+user_problem_statement additions:
+  1. Diskon Transaksi: tombol diskon/potongan harga per transaksi di checkout (nominal Rp ATAU persen %)
+  2. Hutang/Kasbon Pelanggan: catat belanja belum lunas (nama + HP + catatan), DP opsional, bayar cicil / lunasi dari tab baru "Kasbon"
+  3. Kategori Barang: kelola kategori (tambah/edit/hapus) via tombol pricetags di header halaman Stok -> modal /categories
+
+Implementation notes:
+  - StoreContext: Transaction now has discount, total, status(lunas|hutang), customerName. New Debt entity (wp_debts) with payments[] for cicilan. Categories dynamic (wp_categories), addCategory/renameCategory/deleteCategory (delete moves products to "Lainnya"/fallback). Old transactions normalized on load.
+  - checkout(opts: {paid, discount?, debt?}) replaces checkout(paid).
+  - New tab (tabs)/hutang.tsx "Kasbon" (5 tabs now). New modal app/categories.tsx.
+  - checkout.tsx: discount input (Rp/% toggle), method segmented Tunai vs Kasbon/Hutang; kasbon requires customer name, DP optional, shows Sisa Hutang.
+  - receipt (screen + print HTML): shows Subtotal/Diskon/Total, and for kasbon: Pelanggan, Dibayar(DP), Sisa Kasbon, badge BELUM LUNAS.
+  - laporan: gross uses tx.total (after discount); CSV has Diskon/Total/Status columns; KASBON badge in history rows.
+  - This is a fully OFFLINE app - no backend testing needed. PIN: create 123456 on first launch.

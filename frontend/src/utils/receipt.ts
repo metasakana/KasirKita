@@ -38,10 +38,27 @@ function receiptHtml(tx: Transaction, storeName: string): string {
     <table>${rows}</table>
     <hr/>
     <table>
-      <tr class="total-row"><td>Total</td><td class="right big">${formatRupiah(tx.subtotal)}</td></tr>
-      <tr><td>Tunai</td><td class="right">${formatRupiah(tx.paid)}</td></tr>
-      <tr><td>Kembalian</td><td class="right">${formatRupiah(tx.change)}</td></tr>
+      ${
+        tx.discount > 0
+          ? `<tr><td>Subtotal</td><td class="right">${formatRupiah(tx.subtotal)}</td></tr>
+      <tr><td>Diskon</td><td class="right">-${formatRupiah(tx.discount)}</td></tr>`
+          : ""
+      }
+      <tr class="total-row"><td>Total</td><td class="right big">${formatRupiah(tx.total)}</td></tr>
+      ${
+        tx.status === "hutang"
+          ? `<tr><td>Pelanggan</td><td class="right">${tx.customerName || "-"}</td></tr>
+      <tr><td>Dibayar (DP)</td><td class="right">${formatRupiah(tx.paid)}</td></tr>
+      <tr><td><b>Sisa Kasbon</b></td><td class="right"><b>${formatRupiah(tx.total - tx.paid)}</b></td></tr>`
+          : `<tr><td>Tunai</td><td class="right">${formatRupiah(tx.paid)}</td></tr>
+      <tr><td>Kembalian</td><td class="right">${formatRupiah(tx.change)}</td></tr>`
+      }
     </table>
+    ${
+      tx.status === "hutang"
+        ? `<p class="center" style="color:#c0392b;font-weight:700;margin-top:8px;">*** BELUM LUNAS (KASBON) ***</p>`
+        : ""
+    }
     <p class="thanks">Terima kasih telah berbelanja 🙏<br/>Barang yang sudah dibeli tidak dapat ditukar</p>
   </body></html>`;
 }

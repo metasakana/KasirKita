@@ -47,3 +47,10 @@ instan, kalkulator kasir & transaksi, laporan penjualan/keuangan dengan ekspor C
 - P1: Barcode scan (butuh dev build, tidak jalan di Expo Go)
 - P2: Backup/Restore JSON (user memilih CSV saja untuk MVP)
 - P2: Grafik tren penjualan
+
+## Update Sesi 2 (Juni 2026) — Fitur Baru (SELESAI & TERUJI 22/22)
+1. **Diskon Transaksi** — di halaman pembayaran: toggle Rp (nominal) / % (persen), total & struk menampilkan Subtotal, Diskon, Total. Laporan pendapatan kotor memakai total setelah diskon.
+2. **Hutang/Kasbon Pelanggan** — metode pembayaran "Kasbon / Hutang" di checkout (nama wajib, HP & catatan opsional, DP opsional). Tab baru "Kasbon": ringkasan total hutang berjalan, filter Belum Lunas/Lunas/Semua, bayar cicil atau "Lunasi Semua". Struk kasbon menampilkan Pelanggan, DP, Sisa Kasbon, badge BELUM LUNAS. Data: `wp_debts` (Debt + payments[]).
+3. **Kelola Kategori** — tombol ikon pricetags di header Stok → modal Kelola Kategori: tambah/ubah nama/hapus (barang ikut berpindah; hapus memindahkan barang ke "Lainnya"). Kategori dinamis (`wp_categories`) dipakai di Kasir, Stok, dan form barang.
+
+Perubahan skema: Transaction kini punya `discount`, `total`, `status (lunas|hutang)`, `customerName`. Transaksi lama dinormalisasi otomatis saat load.
