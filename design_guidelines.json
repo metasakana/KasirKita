@@ -1,0 +1,192 @@
+{
+  "app_name": "WarungPintar",
+  "personality": "4 Tactile / Playful modified for high-speed utility (Chunky targets, bold colors)",
+  "personality_one_liner": "A fast, tactile, and highly legible point-of-sale system that feels durable, friendly, and error-proof in a fast-paced grocery environment.",
+  "color": {
+    "surface": "#FFFFFF",
+    "onSurface": "#1A1412",
+    "surfaceSecondary": "#F5F0EB",
+    "onSurfaceSecondary": "#3D312B",
+    "surfaceTertiary": "#EAE3DD",
+    "onSurfaceTertiary": "#5C4A42",
+    "surfaceInverse": "#14100D",
+    "onSurfaceInverse": "#FDFCFB",
+    "brand": "#FF6B00",
+    "brandPrimary": "#FF6B00",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#FFB800",
+    "onBrandSecondary": "#1A1412",
+    "brandTertiary": "#FFE1CC",
+    "onBrandTertiary": "#8A3A00",
+    "success": "#16A34A",
+    "onSuccess": "#FFFFFF",
+    "warning": "#EAB308",
+    "onWarning": "#1A1412",
+    "error": "#DC2626",
+    "onError": "#FFFFFF",
+    "border": "#E5DCD5",
+    "borderStrong": "#C2B2A9",
+    "divider": "#E5DCD5"
+  },
+  "color_dark": {
+    "surface": "#14100D",
+    "onSurface": "#FDFCFB",
+    "surfaceSecondary": "#241D18",
+    "onSurfaceSecondary": "#E5DCD5",
+    "surfaceTertiary": "#332A23",
+    "onSurfaceTertiary": "#C2B2A9",
+    "surfaceInverse": "#FFFFFF",
+    "onSurfaceInverse": "#1A1412",
+    "brand": "#FF8A33",
+    "brandPrimary": "#FF8A33",
+    "onBrandPrimary": "#1A1412",
+    "brandSecondary": "#FFC733",
+    "onBrandSecondary": "#1A1412",
+    "brandTertiary": "#4D2100",
+    "onBrandTertiary": "#FFD1B3",
+    "success": "#22C55E",
+    "onSuccess": "#000000",
+    "warning": "#FACC15",
+    "onWarning": "#000000",
+    "error": "#EF4444",
+    "onError": "#FFFFFF",
+    "border": "#332A23",
+    "borderStrong": "#4A3E35",
+    "divider": "#2A221C"
+  },
+  "typography": {
+    "displayFontFamily": "Space Grotesk",
+    "textFontFamily": "Plus Jakarta Sans",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24,
+      "3xl": 32
+    }
+  },
+  "spacing": {
+    "rule": "Generous spacing. Touch targets minimum 56pt height for core actions (POS environment requires fat-finger prevention). Pad product cards with md, screen edges with lg.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "pill": 999
+  },
+  "shadow_tier": "1",
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Use heavy-tint frosted glass for the persistent bottom cart summary in Kasir screen so content flows behind it cleanly.",
+      "Use blur on bottom tab bar to maintain screen depth."
+    ],
+    "dont's": [
+      "No blur on product cards or fast-moving lists as it affects scroll performance.",
+      "No blur on low-end android devices (fallback to solid surfaceSecondary)."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Login (PIN)",
+      "purpose": "Secure, fast entry into the POS app using a large numeric keypad.",
+      "states": {
+        "loading": "Centered spinner",
+        "empty": "N/A",
+        "error": "Shake animation on keypad + red warning text"
+      },
+      "layout": "Hero abstract gradient image taking top 30% of screen with WarungPintar logo overlaid (gradient scrim applied). Below it, a giant numeric keypad (each key minimum 64pt height/width). Visual PIN dots feedback above the keypad."
+    },
+    {
+      "name": "Kasir (POS/Home)",
+      "purpose": "Primary operational screen to quickly search, select quantities, and calculate totals.",
+      "states": {
+        "loading": "Skeleton grid of product cards",
+        "empty": "Illustration of empty box with 'Belum ada barang di toko' and button 'Tambah Barang'",
+        "error": "Error message with retry button"
+      },
+      "layout": "Top section: Sticky search bar (full width) and horizontal scrolling category chips (pill radius). Middle: 2-column grid of chunky product cards showing Name, Price, and Stock. If stock < 5, show a bold RED badge/outline. Bottom: Sticky fixed container showing 'Total Belanja' with a massive 'Bayar' CTA. Use KeyboardAvoidingView so search doesn't break layout."
+    },
+    {
+      "name": "Stok (Inventory)",
+      "purpose": "CRUD list to manage grocery stock, update prices, and monitor low inventory.",
+      "states": {
+        "loading": "Skeleton list rows",
+        "empty": "Illustration of empty shelves",
+        "error": "Error message with retry button"
+      },
+      "layout": "List view for rapid scanning. Each row shows item name, category, modal price (HPP), selling price, and stock left. Rows with stock < 5 get a light red surfaceTertiary tint to alert the user instantly. Floating Action Button (FAB) at bottom right for 'Tambah Barang'."
+    },
+    {
+      "name": "Laporan (Reports)",
+      "purpose": "Daily/weekly financial overview showing gross revenue, COGS, and net profit.",
+      "states": {
+        "loading": "Skeleton metric cards",
+        "empty": "Illustration of a chart with 'Belum ada penjualan hari ini'",
+        "error": "Error message with retry button"
+      },
+      "layout": "Three large prominent metric cards at the top (Pendapatan Kotor, Total Modal, Keuntungan Bersih) with bold typography. Below it, a list of recent transactions. A sticky 'Ekspor CSV' action button."
+    },
+    {
+      "name": "Pengaturan (Settings)",
+      "purpose": "Manage app themes (Light/Dark/Neutral), PIN reset, and export data.",
+      "states": {
+        "loading": "Spinner",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Standard vertical list with grouped sections. Include a Segmented Control for Theme selection (Terang, Gelap, Netral). Tinted icon containers for each setting row."
+    }
+  ],
+  "images": {
+    "login_hero_bg": {
+      "url": "https://images.unsplash.com/photo-1617957718614-8c23f060c2d0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjV8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMG9yYW5nZSUyMHllbGxvdyUyMGdyYWRpZW50JTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODc3MzM4MjJ8MA&ixlib=rb-4.1.0&q=85",
+      "dark": "https://images.pexels.com/photos/1747/light-abstract-fire-heat.jpg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Abstract orange and yellow gradient background"
+    },
+    "empty_stock_illustration": {
+      "url": "https://images.unsplash.com/photo-1656543802898-41c8c46683a7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwxfHxlbXB0eSUyMGNhcmRib2FyZCUyMGJveCUyMG1pbmltYWx8ZW58MHx8fHwxNzg3NzMzODIyfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Minimal empty cardboard box"
+    }
+  },
+  "haptics": {
+    "events": {
+      "numpad_press": "light",
+      "add_to_cart": "medium",
+      "pay_button_success": "success",
+      "error_pin": "error",
+      "tab_change": "light"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the color palette. Do NOT introduce any Blues or Purples. Stick to the Orange/Yellow 'brand' scales and the defined neutral/charcoal palettes.",
+    "Ensure touch targets are massive. The prompt specifies this is a cashier app, so 56pt minimum height for the 'Bayar' (Pay) button and numeric PIN pad. Fat-finger prevention is critical.",
+    "Typography: Use 'Space Grotesk' for big numbers, totals, and metrics (prices, quantity). Use 'Plus Jakarta Sans' for labels, body copy, and UI text.",
+    "Implement a prominent sticky 'Total Belanja' bottom container on the Kasir screen, allowing the product grid to scroll behind it. Ensure bottom safe area is respected.",
+    "For the low stock indicator (stock < 5), use the 'error' token to render a bold badge or border. In the Stok screen, tint the entire row if stock is critical.",
+    "Render the login hero image with a linear-gradient scrim (top-to-bottom, transparent to surface) to ensure any logo or text placed above the keypad remains fully legible.",
+    "Ensure total offline capability per user request; use local storage (e.g., SQLite or AsyncStorage) as the single source of truth."
+  ]
+}
